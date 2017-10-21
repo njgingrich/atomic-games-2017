@@ -54,8 +54,8 @@ public class GameMap {
     }
 
     public static String getDirection(Long rowFrom, Long colFrom, Long rowTo, Long colTo) {
-        if ((rowFrom - rowTo == 1) && (colFrom - colTo == 0)) return "E";
-        else if ((rowFrom - rowTo == -1) && (colFrom - colTo == 0)) return "W";
+        if ((rowFrom - rowTo == 1) && (colFrom - colTo == 0)) return "W";
+        else if ((rowFrom - rowTo == -1) && (colFrom - colTo == 0)) return "E";
         else if ((rowFrom - rowTo == 0) && (colFrom - colTo == 1)) return "N";
         else if ((rowFrom - rowTo == 0) && (colFrom - colTo == -1)) return "S";
         else return "E"; // ew

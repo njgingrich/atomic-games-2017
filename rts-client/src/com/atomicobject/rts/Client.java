@@ -143,16 +143,17 @@ public class Client {
 
 		// From the visible resources, collect what you can
 		List<Command> collections = collectResources(resourceTiles);
-		// Move the units who have collected back to the base
-		returnToBase();
-		scout();
-		List<Command> toCreate = createUnits();
+		// List<Command> toCreate = createUnits();
 		List<Command> moves = getNextMoveForUnits();
-		// goToResources(resourceTiles);
+		// Move the units who have collected back to the base
+		// returnToBase();
+		if (resourceTiles.size() == 0) {
+			scout();
+		}
+		goToResources(resourceTiles);
 
 		List<Command> commands = new ArrayList<>();
 		// commands.addAll(toCreate);
-		// commands.add(move);
 		commands.addAll(collections);
 		commands.addAll(moves);
 		return Command.create(commands);
@@ -187,10 +188,16 @@ public class Client {
 	private List<Command> getNextMoveForUnits() {
 		List<Command> commands = new ArrayList<>();
 		units.forEach((id, unit) -> {
+			if (unit.path != null) {
+				System.out.println("Path found for unit " + id + ": ");
+				unit.path.forEach(path -> {
+					System.out.println((path.getxPosition()-30 + ", " + (path.getyPosition()-30)));
+				});
+			}
 			if (unit.path != null && !unit.path.isEmpty()) {
 				Map<String, Object> args = new HashMap<>();
 				AGNode first = unit.path.remove(0);
-				System.out.println("Moving from [" + unit.x + ", " + unit.y + "] to [" + first.tile.x + ", " + first.tile.y + "]");
+				System.out.println("Moving from [" + unit.x + ", " + unit.y + "] to [" + first.tile.x + ", " + first.tile.y + "] (" + GameMap.getDirection(unit.x, unit.y, first.tile.x, first.tile.y) + ")");
 				args.put("dir", GameMap.getDirection(unit.x, unit.y, first.tile.x, first.tile.y));
 				args.put("unit", id);
 				commands.add(new Command(Command.MOVE, args));
@@ -242,13 +249,16 @@ public class Client {
 
 	private void goToResources(List<Tile> resources) {
 		resources.forEach(resource -> {
+			System.out.println("For resource at [" + resource.x + ", " + resource.y + "]: ");
 			// get an available worker
+			System.out.println("Busy workers: " + Arrays.toString(gathering.toArray()));
 			List<Unit> available = units.values().stream()
 												 .filter(unit -> unit.type.equals("worker"))
 												 .filter(unit -> !gathering.contains(unit.id))
 												 .collect(Collectors.toList());
 
 			for (Unit worker : available) {
+				System.out.println("Found available worker: " + worker.id);
 				// calculate path from worker to resource
 				List<AGNode> path = map.pathfindingMap.findPath(worker.x.intValue(),
 																worker.y.intValue(),
@@ -257,6 +267,7 @@ public class Client {
 				// store path in worker
 				worker.path = path;
 				gathering.add(worker.id);
+				return;
 			}
 		});
 	}
