@@ -3,15 +3,15 @@ package com.atomicobject.rts;
 import org.json.simple.JSONObject;
 
 public class TileResource {
-    int id;
+    Long id;
     String type;
-    int total;
-    int value;
+    Long total;
+    Long value;
 
     public TileResource(JSONObject json) {
-        id = (int) json.get("id");
+        id = (Long) json.get("id");
         type = (String) json.get("type");
-        total = (int) json.get("total");
-        value = (int) json.get("value");
+        total = (Long) json.get("total");
+        value = (Long) json.get("value");
     }
 }

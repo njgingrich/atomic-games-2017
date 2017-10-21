@@ -18,6 +18,7 @@ public class Client {
 	OutputStreamWriter out;
 	LinkedBlockingQueue<Map<String, Object>> updates;
 	Map<Long, Unit> units;
+	GameMap map = new GameMap();
 
 	public Client(Socket socket) {
 		updates = new LinkedBlockingQueue<Map<String, Object>>();
@@ -42,6 +43,9 @@ public class Client {
 			while ((nextLine = input.readLine()) != null) {
 				@SuppressWarnings("unchecked")
 				Map<String, Object> update = (Map<String, Object>) JSONValue.parse(nextLine.trim());
+				for (String s : update.keySet()) {
+					System.out.println("UPDATE: " + s + ", " + update.get(s));
+				}
 				updates.add(update);
 			}
 		} catch (IOException e) {
@@ -68,7 +72,9 @@ public class Client {
 			System.out.println("Processing udpate: " + update);
 			@SuppressWarnings("unchecked")
 			Collection<JSONObject> unitUpdates = (Collection<JSONObject>) update.get("unit_updates");
+			Collection<JSONObject> tileUpdates = (Collection<JSONObject>) update.get("tile_updates");
 			addUnitUpdate(unitUpdates);
+			addTileUpdate(tileUpdates);
 		}
 	}
 
@@ -79,6 +85,13 @@ public class Client {
 			if (!type.equals("base")) {
 				units.put(id, new Unit(unitUpdate));
 			}
+		});
+	}
+
+	private void addTileUpdate(Collection<JSONObject> tileUpdates) {
+		tileUpdates.forEach((tileUpdate) -> {
+			Tile t = new Tile(tileUpdate);
+			map.put(t.x, t.y, t);
 		});
 	}
 
@@ -94,6 +107,8 @@ public class Client {
 		String[] directions = {"N","E","S","W"};
 		String direction = directions[(int) Math.floor(Math.random() * 4)];
 
+		List<Tile> resourceTiles = getResourceLocations();
+
 		Long[] unitIds = units.keySet().toArray(new Long[units.size()]);
 		Long unitId = unitIds[(int) Math.floor(Math.random() * unitIds.length)];
 
@@ -104,6 +119,20 @@ public class Client {
 		List<Command> commands = new ArrayList<>();
 		commands.add(move);
 		return Command.create(commands);
+	}
+
+	private List<Tile> getResourceLocations() {
+		List<Tile> tiles = new ArrayList<>();
+		System.out.println("Looking for resources...");
+		for (Tile[] row : map.rows) {
+			for (Tile tile : row) {
+				if (tile != null && tile.resource != null) {
+					System.out.println("Found resource at [" + tile.x + ", " + tile.y + "]");
+					tiles.add(tile);
+				}
+			}
+		}
+		return tiles;
 	}
 
 	@SuppressWarnings("unchecked")

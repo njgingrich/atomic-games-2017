@@ -4,23 +4,24 @@ import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
 public class Tile {
-    boolean visible;
-    int x;
-    int y;
-    boolean blocked;
-    TileResource[] resources;
+    Boolean visible;
+    Long x;
+    Long y;
+    Boolean blocked;
+    TileResource resource;
     Unit[] units;
 
     public Tile(JSONObject json) {
-        visible = (boolean) json.get("visible");
-        x = (int) json.get("x");
-        y = (int) json.get("y");
-        blocked = (boolean) json.get("blocked");
-        JSONArray res = (JSONArray) json.get("resources");
-        for (int i = 0; i < res.size(); i++) {
-            resources[i] = new TileResource((JSONObject) res.get(i));
+        visible = (Boolean) json.get("visible");
+        x = (Long) json.get("x");
+        y = (Long) json.get("y");
+        blocked = (Boolean) json.get("blocked");
+        if (json.get("resources") != null) {
+            resource = new TileResource((JSONObject) json.get("resources"));
         }
+
         JSONArray jsonUnits = (JSONArray) json.get("units");
+        if (units == null) jsonUnits = new JSONArray();
         for (int i = 0; i < jsonUnits.size(); i++) {
             units[i] = new Unit((JSONObject) jsonUnits.get(i));
         }
