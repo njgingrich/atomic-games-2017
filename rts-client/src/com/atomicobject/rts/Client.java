@@ -22,6 +22,7 @@ public class Client {
 	Map<Long, Unit> units;
 	List<Tile> gathering;
 	Long player;
+	Long score;
 	GameMap map = new GameMap();
 
 	public Client(Socket socket) {
@@ -91,6 +92,9 @@ public class Client {
 			Unit u = new Unit(unitUpdate);
 			if (!type.equals("base")) {
 				units.put(id, u);
+			} else {
+				score = u.resource;
+				System.out.println("Set score to: " + score);
 			}
 			if ((Long) unitUpdate.get("player_id") != player) {
 				map.putEnemy(u.x, u.y, u);
@@ -120,10 +124,24 @@ public class Client {
 		List<Tile> resourceTiles = getResourceLocations();
 		List<Unit> enemies = getEnemyLocations();
 
+		/**
+		 * Strategy:
+		 * - If unit has resource, return to base
+		 * - If possible, gather a resource
+		 * - Otherwise, if an enemy unit is in attack range, attack it
+		 * -
+		 * - if resources > 700:
+		 * 	- if workerCount < 5, create a new
+		 * 	- if scoutCount < 2, create a new
+		 * 	- if tankCount < 1, create a new
+		 * -
+		 */
+
 		// From the visible resources, collect what you can
 		List<Command> collections = collectResources(resourceTiles);
 		// Move the units who have collected back to the base
 		List<Command> returning = returnToBase();
+		List<Command> toCreate = createUnits();
 
 		Long[] unitIds = units.keySet().toArray(new Long[units.size()]);
 		Long unitId = unitIds[(int) Math.floor(Math.random() * unitIds.length)];
@@ -133,8 +151,46 @@ public class Client {
 		args.put("unit", unitId);
 		Command move = new Command(Command.MOVE, args);
 		List<Command> commands = new ArrayList<>();
+		commands.addAll(toCreate);
+		commands.addAll(collections);
+		commands.addAll(returning);
 		commands.add(move);
 		return Command.create(commands);
+	}
+
+	private List<Command> createUnits() {
+		Long tempScore = score;
+		List<Command> commands = new ArrayList<>();
+		while (tempScore > 500) {
+			if (tempScore - Unit.WORKER_COST > 500) {
+				Map<String, Object> args = new HashMap<>();
+				args.put("type", Unit.WORKER);
+				commands.add(new Command(Command.CREATE, args));
+				tempScore -= Unit.WORKER_COST;
+				System.out.println("Creating new worker (new score=" + tempScore + ")");
+				continue;
+			}
+			if (tempScore - Unit.TANK_COST > 400) {
+				Map<String, Object> args = new HashMap<>();
+				args.put("type", Unit.TANK);
+				commands.add(new Command(Command.CREATE, args));
+				tempScore -= Unit.TANK_COST;
+				System.out.println("Creating new tank (new score=" + tempScore + ")");
+				continue;
+			}
+			if (tempScore - Unit.SCOUT_COST > 500) {
+				Map<String, Object> args = new HashMap<>();
+				args.put("type", Unit.SCOUT);
+				commands.add(new Command(Command.CREATE, args));
+				tempScore -= Unit.SCOUT_COST;
+				System.out.println("Creating new scout (new score=" + tempScore + ")");
+				continue;
+			}
+			break;
+		}
+
+		System.out.println("out of loop");
+		return commands;
 	}
 
 	private List<Command> returnToBase() {

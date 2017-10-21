@@ -2,6 +2,13 @@ package com.atomicobject.rts.model;
 import org.json.simple.JSONObject;
 
 public class Unit {
+    public static final int WORKER_COST = 100;
+    public static final int SCOUT_COST = 130;
+    public static final int TANK_COST = 150;
+    public static final String TANK = "tank";
+    public static final String WORKER = "worker";
+    public static final String SCOUT = "scout";
+
 	public Long resource;
 	public String attackType;
 	public Long health;
