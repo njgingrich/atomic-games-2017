@@ -7,9 +7,11 @@ import java.io.OutputStreamWriter;
 import java.net.Socket;
 import java.util.*;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.stream.Collectors;
 
 import com.atomicobject.rts.model.Tile;
 import com.atomicobject.rts.model.Unit;
+import com.atomicobject.rts.pathfinding.AGNode;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
@@ -20,7 +22,7 @@ public class Client {
 	OutputStreamWriter out;
 	LinkedBlockingQueue<Map<String, Object>> updates;
 	Map<Long, Unit> units;
-	List<Tile> gathering;
+	Set<Long> gathering;
 	Long player;
 	Long score;
 	GameMap map = new GameMap();
@@ -28,7 +30,7 @@ public class Client {
 	public Client(Socket socket) {
 		updates = new LinkedBlockingQueue<Map<String, Object>>();
 		units = new HashMap<Long, Unit>();
-		gathering = new ArrayList<>();
+		gathering = new HashSet<>();
 		try {
 			input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 			out = new OutputStreamWriter(socket.getOutputStream());
@@ -105,7 +107,12 @@ public class Client {
 	private void addTileUpdate(Collection<JSONObject> tileUpdates) {
 		tileUpdates.forEach((tileUpdate) -> {
 			Tile t = new Tile(tileUpdate);
-			map.putTile(t.x, t.y, t);
+			Tile curr = map.getTile(t.x, t.y);
+			if (curr == null) {
+				map.putTile(t.x, t.y, t);
+			} else {
+				curr.updateTile(tileUpdate);
+			}
 		});
 	}
 
@@ -118,9 +125,6 @@ public class Client {
 
 	@SuppressWarnings("unchecked")
 	private JSONArray buildCommandList() {
-		String[] directions = {"N","E","S","W"};
-		String direction = directions[(int) Math.floor(Math.random() * 4)];
-
 		List<Tile> resourceTiles = getResourceLocations();
 		List<Unit> enemies = getEnemyLocations();
 
@@ -140,22 +144,59 @@ public class Client {
 		// From the visible resources, collect what you can
 		List<Command> collections = collectResources(resourceTiles);
 		// Move the units who have collected back to the base
-		List<Command> returning = returnToBase();
+		returnToBase();
+		scout();
 		List<Command> toCreate = createUnits();
+		List<Command> moves = getNextMoveForUnits();
+		// goToResources(resourceTiles);
 
-		Long[] unitIds = units.keySet().toArray(new Long[units.size()]);
-		Long unitId = unitIds[(int) Math.floor(Math.random() * unitIds.length)];
-
-		Map<String, Object> args = new HashMap<>();
-		args.put("dir", direction);
-		args.put("unit", unitId);
-		Command move = new Command(Command.MOVE, args);
 		List<Command> commands = new ArrayList<>();
-		commands.addAll(toCreate);
+		// commands.addAll(toCreate);
+		// commands.add(move);
 		commands.addAll(collections);
-		commands.addAll(returning);
-		commands.add(move);
+		commands.addAll(moves);
 		return Command.create(commands);
+	}
+
+	private void scout() {
+		String[] directions = {"N","E","S","W"};
+		Long[] unitIds = units.keySet().toArray(new Long[units.size()]);
+
+		for (int i = 0; i < 4; i++) {
+			Long id = unitIds[i];
+			Unit u = units.get(id);
+			Map<String, Object> args = new HashMap<>();
+			String direction = directions[i];
+			switch (direction) {
+				case "N":
+					u.path = map.pathfindingMap.findPath(u.x.intValue(), u.y.intValue(), 0, -2);
+					break;
+				case "S":
+					u.path = map.pathfindingMap.findPath(u.x.intValue(), u.y.intValue(), 0, 2);
+					break;
+				case "E":
+					u.path = map.pathfindingMap.findPath(u.x.intValue(), u.y.intValue(), 2, 0);
+					break;
+				case "W":
+					u.path = map.pathfindingMap.findPath(u.x.intValue(), u.y.intValue(), -2, 0);
+					break;
+			}
+		}
+	}
+
+	private List<Command> getNextMoveForUnits() {
+		List<Command> commands = new ArrayList<>();
+		units.forEach((id, unit) -> {
+			if (unit.path != null && !unit.path.isEmpty()) {
+				Map<String, Object> args = new HashMap<>();
+				AGNode first = unit.path.remove(0);
+				System.out.println("Moving from [" + unit.x + ", " + unit.y + "] to [" + first.tile.x + ", " + first.tile.y + "]");
+				args.put("dir", GameMap.getDirection(unit.x, unit.y, first.tile.x, first.tile.y));
+				args.put("unit", id);
+				commands.add(new Command(Command.MOVE, args));
+			}
+		});
+		return commands;
 	}
 
 	private List<Command> createUnits() {
@@ -188,20 +229,36 @@ public class Client {
 			}
 			break;
 		}
-
-		System.out.println("out of loop");
 		return commands;
 	}
 
-	private List<Command> returnToBase() {
-		List<Command> commands = new ArrayList<>();
+	private void returnToBase() {
 		gathering.forEach(id -> {
-			Map<String, Object> args = new HashMap<>();
-			args.put("dir", "W");
-			args.put("unit", id);
-			commands.add(new Command(Command.MOVE, args));
+			Unit worker = units.get(id);
+			List<AGNode> path = map.pathfindingMap.findPath(worker.x.intValue(), worker.y.intValue(),0,0);
+			worker.path = path;
 		});
-		return commands;
+	}
+
+	private void goToResources(List<Tile> resources) {
+		resources.forEach(resource -> {
+			// get an available worker
+			List<Unit> available = units.values().stream()
+												 .filter(unit -> unit.type.equals("worker"))
+												 .filter(unit -> !gathering.contains(unit.id))
+												 .collect(Collectors.toList());
+
+			for (Unit worker : available) {
+				// calculate path from worker to resource
+				List<AGNode> path = map.pathfindingMap.findPath(worker.x.intValue(),
+																worker.y.intValue(),
+																resource.x.intValue(),
+																resource.y.intValue());
+				// store path in worker
+				worker.path = path;
+				gathering.add(worker.id);
+			}
+		});
 	}
 
 	private List<Command> collectResources(List<Tile> resources) {
@@ -213,7 +270,9 @@ public class Client {
 			resources.forEach(resource -> {
 				if (Unit.withinMelee(unit.x, unit.y, resource.x, resource.y)) {
 					System.out.println("Dispatching unit " + id + " to collect resource at [" + resource.x + ", " + resource.y + "]");
+					gathering.add(id);
 					Map<String, Object> args = new HashMap<>();
+					System.out.println("Direction for [" + unit.x + ", " + unit.y + "] to [" + resource.x + ", " + resource.y + "] is " + GameMap.getDirection(unit.x, unit.y, resource.x, resource.y));
 					args.put("dir", GameMap.getDirection(unit.x, unit.y, resource.x, resource.y));
 					args.put("unit", id);
 					Command gather = new Command(Command.GATHER, args);

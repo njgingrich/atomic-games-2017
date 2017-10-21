@@ -1,5 +1,9 @@
 package com.atomicobject.rts.model;
+import com.atomicobject.rts.pathfinding.AGNode;
 import org.json.simple.JSONObject;
+
+import java.util.LinkedList;
+import java.util.List;
 
 public class Unit {
     public static final int WORKER_COST = 100;
@@ -24,6 +28,7 @@ public class Unit {
 	public Long id;
 	public String status;
 	public Long attackCooldownDuration;
+	public List<AGNode> path;
 
 	public Unit(JSONObject json) {
 		resource = (Long) json.get("resource");
@@ -41,6 +46,8 @@ public class Unit {
 		id = (Long) json.get("id");
 		status = (String) json.get("status");
 		attackCooldownDuration = (Long) json.get("attack_cooldown_duration");
+
+		path = new LinkedList<>();
 	}
 
 	public static boolean withinMelee(Long row1, Long col1, Long row2, Long col2) {

@@ -3,8 +3,7 @@ package com.atomicobject.rts.pathfinding;
 import com.atomicobject.rts.model.Tile;
 
 public class AGNode extends AbstractNode {
-
-	Tile tile;
+	public Tile tile;
 	public AGNode(int xPosition, int yPosition) {
 		super(xPosition, yPosition);
 	}
@@ -20,4 +19,9 @@ public class AGNode extends AbstractNode {
 
 	}
 
+	@Override
+	public boolean isWalkable() {
+		if (tile == null) return false;
+		return !tile.blocked;
+	}
 }

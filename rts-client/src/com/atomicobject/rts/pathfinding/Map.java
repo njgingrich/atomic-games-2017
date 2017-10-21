@@ -55,7 +55,8 @@ import com.atomicobject.rts.model.Tile;
 public class Map<T extends AbstractNode> {
 
     /** weather or not it is possible to walk diagonally on the map in general. */
-    protected static boolean CANMOVEDIAGONALY = true;
+    protected static boolean CANMOVEDIAGONALY = false;
+    public static int ROWS;
 
     /** holds nodes. first dim represents x-, second y-axis. */
     private T[][] nodes;
@@ -67,24 +68,6 @@ public class Map<T extends AbstractNode> {
 
     /** a Factory to create instances of specified nodes. */
     private NodeFactory nodeFactory;
-
-    /**
-     * constructs a squared map with given width and hight.
-     * <p>
-     * The nodes will be instanciated througth the given nodeFactory.
-     *
-     * @param width
-     * @param higth
-     * @param nodeFactory 
-     */
-    public Map(int width, int higth, NodeFactory nodeFactory) {
-        // TODO check parameters. width and higth should be > 0.
-        this.nodeFactory = nodeFactory;        
-        nodes = (T[][]) new AbstractNode[width][higth];
-        this.width = width - 1;
-        this.height = higth - 1;
-        initEmptyNodes();
-    }
 
     /**
      * initializes all nodes. Their coordinates will be set correctly.
@@ -99,17 +82,8 @@ public class Map<T extends AbstractNode> {
         }
     }
 
-    /**
-     * initializes all nodes. Their coordinates will be set correctly.
-     */
-    private void initEmptyNodes() {
-        for (int i = 0; i <= width; i++) {
-            for (int j = 0; j <= height; j++) {
-                nodes[i][j] = (T) nodeFactory.createNode(i, j);
-            }
-        }
-    } 
-    public Map(Tile[][] tiles, int height, int width, NodeFactory nodeFactory) {
+    public Map(Tile[][] tiles, int height, int width, int rows, NodeFactory nodeFactory) {
+        ROWS = rows;
     	this.nodeFactory = nodeFactory;
     	nodes = (T[][]) new AbstractNode[width][height];
     	this.width = width - 1;
@@ -215,6 +189,11 @@ public class Map<T extends AbstractNode> {
      * @return
      */
     public final List<T> findPath(int oldX, int oldY, int newX, int newY) {
+        oldX += ROWS;
+        oldY += ROWS;
+        newX += ROWS;
+        newY += ROWS;
+
         // TODO check input
         openList = new LinkedList<T>();
         closedList = new LinkedList<T>();
@@ -275,7 +254,7 @@ public class Map<T extends AbstractNode> {
             path.addFirst(curr);
             curr = (T) curr.getPrevious();
 
-            if (curr.equals(start)) {
+            if (curr == null || curr.equals(start)) {
                 done = true;
             }
         }
