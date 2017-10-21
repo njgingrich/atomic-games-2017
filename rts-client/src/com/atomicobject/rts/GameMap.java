@@ -1,5 +1,7 @@
 package com.atomicobject.rts;
 
+import com.atomicobject.rts.model.Tile;
+
 public class GameMap {
     private static int ROWS = 30;
     public Tile[][] rows;

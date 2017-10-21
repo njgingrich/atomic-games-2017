@@ -8,6 +8,8 @@ import java.net.Socket;
 import java.util.*;
 import java.util.concurrent.LinkedBlockingQueue;
 
+import com.atomicobject.rts.model.Tile;
+import com.atomicobject.rts.model.Unit;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;

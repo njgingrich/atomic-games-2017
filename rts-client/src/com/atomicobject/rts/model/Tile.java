@@ -1,15 +1,15 @@
-package com.atomicobject.rts;
+package com.atomicobject.rts.model;
 
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
 public class Tile {
-    Boolean visible;
-    Long x;
-    Long y;
-    Boolean blocked;
-    TileResource resource;
-    Unit[] units;
+    public Boolean visible;
+    public Long x;
+    public Long y;
+    public Boolean blocked;
+    public TileResource resource;
+    public Unit[] units;
 
     public Tile(JSONObject json) {
         visible = (Boolean) json.get("visible");

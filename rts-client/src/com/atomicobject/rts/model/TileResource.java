@@ -1,12 +1,12 @@
-package com.atomicobject.rts;
+package com.atomicobject.rts.model;
 
 import org.json.simple.JSONObject;
 
 public class TileResource {
-    Long id;
-    String type;
-    Long total;
-    Long value;
+    public Long id;
+    public String type;
+    public Long total;
+    public Long value;
 
     public TileResource(JSONObject json) {
         id = (Long) json.get("id");
