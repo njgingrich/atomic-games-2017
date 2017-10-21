@@ -2,15 +2,24 @@ package com.atomicobject.rts;
 
 import com.atomicobject.rts.model.Tile;
 import com.atomicobject.rts.model.Unit;
+import com.atomicobject.rts.pathfinding.AGFactory;
+import com.atomicobject.rts.pathfinding.AGNode;
+import com.atomicobject.rts.pathfinding.Map;
+import com.atomicobject.rts.pathfinding.NodeFactory;
+
 
 public class GameMap {
     private static int ROWS = 30;
     public Tile[][] tiles;
     public Unit[][] enemies;
-
+    public Map<AGNode> pathfindingMap;
+    public NodeFactory factory;
+    
     public GameMap() {
         tiles = new Tile[ROWS * 2][ROWS * 2];
         enemies = new Unit[ROWS * 2][ROWS * 2];
+        factory = new AGFactory();
+        pathfindingMap = new Map<AGNode>(tiles, ROWS * 2, ROWS *2, factory);
     }
 
     public Tile[] tileRow(int row) {
