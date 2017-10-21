@@ -93,7 +93,13 @@ public class Client {
 			String type = (String) unitUpdate.get("type");
 			Unit u = new Unit(unitUpdate);
 			if (!type.equals("base")) {
-				units.put(id, u);
+
+				if (units.containsKey(id)) {
+					units.get(id).updateUnit(unitUpdate);
+					System.out.println("Updating unit " + id);
+				} else {
+					units.put(id, u);
+				}
 			} else {
 				score = u.resource;
 				System.out.println("Set score to: " + score);
@@ -142,7 +148,7 @@ public class Client {
 		 */
 
 		// From the visible resources, collect what you can
-		List<Command> collections = collectResources(resourceTiles);
+		// List<Command> collections = collectResources(resourceTiles);
 		// List<Command> toCreate = createUnits();
 		List<Command> moves = getNextMoveForUnits();
 		// Move the units who have collected back to the base
@@ -150,11 +156,11 @@ public class Client {
 		if (resourceTiles.size() == 0) {
 			scout();
 		}
-		goToResources(resourceTiles);
+		// goToResources(resourceTiles);
 
 		List<Command> commands = new ArrayList<>();
 		// commands.addAll(toCreate);
-		commands.addAll(collections);
+		// commands.addAll(collections);
 		commands.addAll(moves);
 		return Command.create(commands);
 	}
@@ -170,16 +176,16 @@ public class Client {
 			String direction = directions[i];
 			switch (direction) {
 				case "N":
-					u.path = map.pathfindingMap.findPath(u.x.intValue(), u.y.intValue(), 0, -2);
+					u.path = map.pathfindingMap.findPath(u.x.intValue(), u.y.intValue(), 0, -3);
 					break;
 				case "S":
-					u.path = map.pathfindingMap.findPath(u.x.intValue(), u.y.intValue(), 0, 2);
+					u.path = map.pathfindingMap.findPath(u.x.intValue(), u.y.intValue(), 0, 3);
 					break;
 				case "E":
-					u.path = map.pathfindingMap.findPath(u.x.intValue(), u.y.intValue(), 2, 0);
+					u.path = map.pathfindingMap.findPath(u.x.intValue(), u.y.intValue(), 3, 0);
 					break;
 				case "W":
-					u.path = map.pathfindingMap.findPath(u.x.intValue(), u.y.intValue(), -2, 0);
+					u.path = map.pathfindingMap.findPath(u.x.intValue(), u.y.intValue(), -3, 0);
 					break;
 			}
 		}
@@ -189,7 +195,7 @@ public class Client {
 		List<Command> commands = new ArrayList<>();
 		units.forEach((id, unit) -> {
 			if (unit.path != null) {
-				System.out.println("Path found for unit " + id + ": ");
+				System.out.println("Path found for unit " + id + " at (" + unit.x + ", " + unit.y + "): ");
 				unit.path.forEach(path -> {
 					System.out.println((path.getxPosition()-30 + ", " + (path.getyPosition()-30)));
 				});
@@ -197,6 +203,7 @@ public class Client {
 			if (unit.path != null && !unit.path.isEmpty()) {
 				Map<String, Object> args = new HashMap<>();
 				AGNode first = unit.path.remove(0);
+				if (first.tile.x == unit.x && first.tile.y == unit.y) first = unit.path.remove(0);
 				System.out.println("Moving from [" + unit.x + ", " + unit.y + "] to [" + first.tile.x + ", " + first.tile.y + "] (" + GameMap.getDirection(unit.x, unit.y, first.tile.x, first.tile.y) + ")");
 				args.put("dir", GameMap.getDirection(unit.x, unit.y, first.tile.x, first.tile.y));
 				args.put("unit", id);

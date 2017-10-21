@@ -30,7 +30,12 @@ public class Unit {
 	public Long attackCooldownDuration;
 	public List<AGNode> path;
 
-	public Unit(JSONObject json) {
+	public Unit(JSONObject o) {
+		updateUnit(o);
+		path = new LinkedList<>();
+	}
+
+	public void updateUnit(JSONObject json) {
 		resource = (Long) json.get("resource");
 		attackType = (String) json.get("attack_type");
 		health = (Long) json.get("health");
@@ -46,8 +51,6 @@ public class Unit {
 		id = (Long) json.get("id");
 		status = (String) json.get("status");
 		attackCooldownDuration = (Long) json.get("attack_cooldown_duration");
-
-		path = new LinkedList<>();
 	}
 
 	public static boolean withinMelee(Long row1, Long col1, Long row2, Long col2) {
