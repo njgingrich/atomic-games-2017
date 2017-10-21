@@ -1,23 +1,22 @@
-package com.atomicobject.rts;
+package com.atomicobject.rts.model;
 import org.json.simple.JSONObject;
 
 public class Unit {
-
-	Long resource;
-	String attackType;
-	Long health;
-	Long range;
-	Long attackDamage;
-	String type;
-	Long speed;
-	Long attackCooldown;
-	Boolean canAttack;
-	Long playerId;
-	Long x;
-	Long y;
-	Long id;
-	String status;
-	Long attackCooldownDuration;
+	public Long resource;
+	public String attackType;
+	public Long health;
+	public Long range;
+	public Long attackDamage;
+	public String type;
+	public Long speed;
+	public Long attackCooldown;
+	public Boolean canAttack;
+	public Long playerId;
+	public Long x;
+	public Long y;
+	public Long id;
+	public String status;
+	public Long attackCooldownDuration;
 
 	public Unit(JSONObject json) {
 		resource = (Long) json.get("resource");
