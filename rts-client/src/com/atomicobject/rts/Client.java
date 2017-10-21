@@ -122,6 +122,8 @@ public class Client {
 
 		// From the visible resources, collect what you can
 		List<Command> collections = collectResources(resourceTiles);
+		// Move the units who have collected back to the base
+		List<Command> returning = returnToBase();
 
 		Long[] unitIds = units.keySet().toArray(new Long[units.size()]);
 		Long unitId = unitIds[(int) Math.floor(Math.random() * unitIds.length)];
@@ -133,6 +135,17 @@ public class Client {
 		List<Command> commands = new ArrayList<>();
 		commands.add(move);
 		return Command.create(commands);
+	}
+
+	private List<Command> returnToBase() {
+		List<Command> commands = new ArrayList<>();
+		gathering.forEach(id -> {
+			Map<String, Object> args = new HashMap<>();
+			args.put("dir", "W");
+			args.put("unit", id);
+			commands.add(new Command(Command.MOVE, args));
+		});
+		return commands;
 	}
 
 	private List<Command> collectResources(List<Tile> resources) {
