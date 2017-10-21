@@ -35,4 +35,34 @@ public class Unit {
 		status = (String) json.get("status");
 		attackCooldownDuration = (Long) json.get("attack_cooldown_duration");
 	}
+
+	public static boolean withinMelee(Long row1, Long col1, Long row2, Long col2) {
+	    boolean aboveOrBelow = ((row2 - row1 == 1) || (row2 - row1 == -1)) && (col2 - col1 == 0);
+	    boolean leftOrRight  = ((col2 - col1 == 1) || (col2 - col1 == -1)) && (row2 - row1 == 0);
+        boolean onTopOf = onTopOf(row1, col1, row2, col2);
+
+        return onTopOf || aboveOrBelow || leftOrRight;
+	}
+
+	public static boolean withinMelee(Unit unit1, Unit unit2) {
+	    return withinMelee(unit1.x, unit1.y, unit2.x, unit2.y);
+    }
+
+	public static boolean onTopOf(Long row1, Long col1, Long row2, Long col2) {
+        return (row1.equals(row2)) && (col1.equals(col2));
+    }
+
+    public static boolean onTopOf(Unit unit1, Unit unit2) {
+	    return onTopOf(unit1.x, unit1.y, unit2.x, unit2.y);
+    }
+
+    public static boolean withinTankRange(Long row1, Long col1, Long row2, Long col2) {
+        boolean within2rows = ((row2 - row1) >= 0) && ((row2 - row1) <= 2);
+        boolean within2cols = ((col2 - col1) >= 0) && ((col2 - col1) <= 2);
+        return within2rows && within2cols;
+    }
+
+    public static boolean withinTankRange(Unit unit1, Unit unit2) {
+        return withinTankRange(unit1.x, unit1.y, unit2.x, unit2.y);
+    }
 }

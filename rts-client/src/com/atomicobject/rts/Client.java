@@ -20,11 +20,14 @@ public class Client {
 	OutputStreamWriter out;
 	LinkedBlockingQueue<Map<String, Object>> updates;
 	Map<Long, Unit> units;
+	List<Tile> gathering;
+	Long player;
 	GameMap map = new GameMap();
 
 	public Client(Socket socket) {
 		updates = new LinkedBlockingQueue<Map<String, Object>>();
 		units = new HashMap<Long, Unit>();
+		gathering = new ArrayList<>();
 		try {
 			input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 			out = new OutputStreamWriter(socket.getOutputStream());
@@ -75,6 +78,7 @@ public class Client {
 			@SuppressWarnings("unchecked")
 			Collection<JSONObject> unitUpdates = (Collection<JSONObject>) update.get("unit_updates");
 			Collection<JSONObject> tileUpdates = (Collection<JSONObject>) update.get("tile_updates");
+			player = (Long) update.get("player");
 			addUnitUpdate(unitUpdates);
 			addTileUpdate(tileUpdates);
 		}
@@ -84,8 +88,12 @@ public class Client {
 		unitUpdates.forEach((unitUpdate) -> {
 			Long id = (Long) unitUpdate.get("id");
 			String type = (String) unitUpdate.get("type");
+			Unit u = new Unit(unitUpdate);
 			if (!type.equals("base")) {
-				units.put(id, new Unit(unitUpdate));
+				units.put(id, u);
+			}
+			if ((Long) unitUpdate.get("player_id") != player) {
+				map.putEnemy(u.x, u.y, u);
 			}
 		});
 	}
@@ -93,7 +101,7 @@ public class Client {
 	private void addTileUpdate(Collection<JSONObject> tileUpdates) {
 		tileUpdates.forEach((tileUpdate) -> {
 			Tile t = new Tile(tileUpdate);
-			map.put(t.x, t.y, t);
+			map.putTile(t.x, t.y, t);
 		});
 	}
 
@@ -110,6 +118,12 @@ public class Client {
 		String direction = directions[(int) Math.floor(Math.random() * 4)];
 
 		List<Tile> resourceTiles = getResourceLocations();
+		List<Unit> enemies = getEnemyLocations();
+
+		// From the visible resources, collect what you can
+		List<Command> collections = collectResources(resourceTiles);
+		// Move the units who have collected back to the base
+		List<Command> returning = returnToBase();
 
 		Long[] unitIds = units.keySet().toArray(new Long[units.size()]);
 		Long unitId = unitIds[(int) Math.floor(Math.random() * unitIds.length)];
@@ -123,10 +137,41 @@ public class Client {
 		return Command.create(commands);
 	}
 
+	private List<Command> returnToBase() {
+		List<Command> commands = new ArrayList<>();
+		gathering.forEach(id -> {
+			Map<String, Object> args = new HashMap<>();
+			args.put("dir", "W");
+			args.put("unit", id);
+			commands.add(new Command(Command.MOVE, args));
+		});
+		return commands;
+	}
+
+	private List<Command> collectResources(List<Tile> resources) {
+		List<Command> commands = new ArrayList<>();
+
+		units.forEach((id, unit) -> {
+			// Don't reassign units already gathering
+			if (gathering.contains(id)) return;
+			resources.forEach(resource -> {
+				if (Unit.withinMelee(unit.x, unit.y, resource.x, resource.y)) {
+					System.out.println("Dispatching unit " + id + " to collect resource at [" + resource.x + ", " + resource.y + "]");
+					Map<String, Object> args = new HashMap<>();
+					args.put("dir", GameMap.getDirection(unit.x, unit.y, resource.x, resource.y));
+					args.put("unit", id);
+					Command gather = new Command(Command.GATHER, args);
+					commands.add(gather);
+				}
+			});
+		});
+		return commands;
+	}
+
 	private List<Tile> getResourceLocations() {
 		List<Tile> tiles = new ArrayList<>();
 		System.out.println("Looking for resources...");
-		for (Tile[] row : map.rows) {
+		for (Tile[] row : map.tiles) {
 			for (Tile tile : row) {
 				if (tile != null && tile.resource != null) {
 					System.out.println("Found resource at [" + tile.x + ", " + tile.y + "]");
@@ -135,6 +180,20 @@ public class Client {
 			}
 		}
 		return tiles;
+	}
+
+	private List<Unit> getEnemyLocations() {
+		List<Unit> enemies = new ArrayList<>();
+		System.out.println("Looking for enemies...");
+		for (Unit[] row : map.enemies) {
+			for (Unit u : row) {
+				if (u != null) {
+					System.out.println("Found " + u.type + " at [" + u.x + ", " + u.y + "]");
+					enemies.add(u);
+				}
+			}
+		}
+		return enemies;
 	}
 
 	@SuppressWarnings("unchecked")
