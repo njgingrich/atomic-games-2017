@@ -28,6 +28,8 @@ package com.atomicobject.rts.pathfinding;
 import java.util.LinkedList;
 import java.util.List;
 
+import com.atomicobject.rts.model.Tile;
+
 /**
  * This class represents a simple map.
  * <p>
@@ -61,7 +63,7 @@ public class Map<T extends AbstractNode> {
     /** width + 1 is size of first dimension of nodes. */
     protected int width;
     /** higth + 1 is size of second dimension of nodes. */
-    protected int higth;
+    protected int height;
 
     /** a Factory to create instances of specified nodes. */
     private NodeFactory nodeFactory;
@@ -80,8 +82,21 @@ public class Map<T extends AbstractNode> {
         this.nodeFactory = nodeFactory;        
         nodes = (T[][]) new AbstractNode[width][higth];
         this.width = width - 1;
-        this.higth = higth - 1;
+        this.height = higth - 1;
         initEmptyNodes();
+    }
+
+    /**
+     * initializes all nodes. Their coordinates will be set correctly.
+     */
+    private void initEmptyAGNodes(Tile[][] tiles) {
+        for (int i = 0; i <= width; i++) {
+            for (int j = 0; j <= height; j++) {
+            	AGNode node = (AGNode) (T) nodeFactory.createNode(i, j);
+            	node.setTile(tiles[i][j]);
+                nodes[i][j] = (T) node;
+            }
+        }
     }
 
     /**
@@ -89,12 +104,18 @@ public class Map<T extends AbstractNode> {
      */
     private void initEmptyNodes() {
         for (int i = 0; i <= width; i++) {
-            for (int j = 0; j <= higth; j++) {
+            for (int j = 0; j <= height; j++) {
                 nodes[i][j] = (T) nodeFactory.createNode(i, j);
             }
         }
+    } 
+    public Map(Tile[][] tiles, int height, int width, NodeFactory nodeFactory) {
+    	this.nodeFactory = nodeFactory;
+    	nodes = (T[][]) new AbstractNode[width][height];
+    	this.width = width - 1;
+    	this.height = height - 1;
+    	initEmptyAGNodes(tiles);
     }
-
     /**
      * sets nodes walkable field at given coordinates to given value.
      * <p>
@@ -135,7 +156,7 @@ public class Map<T extends AbstractNode> {
         }
         print("\n");
 
-        for (int j = higth; j >= 0; j--) {
+        for (int j = height; j >= 0; j--) {
             print("|"); // boarder of map
             for (int i = 0; i <= width; i++) {
                 if (nodes[i][j].isWalkable()) {
@@ -312,7 +333,7 @@ public class Map<T extends AbstractNode> {
             }
         }
 
-        if (y < higth) {
+        if (y < height) {
             temp = this.getNode(x, (y + 1));
             if (temp.isWalkable() && !closedList.contains(temp)) {
                 temp.setIsDiagonaly(false);
@@ -323,7 +344,7 @@ public class Map<T extends AbstractNode> {
 
         // add nodes that are diagonaly adjacent too:
         if (CANMOVEDIAGONALY) {
-            if (x < width && y < higth) {
+            if (x < width && y < height) {
                 temp = this.getNode((x + 1), (y + 1));
                 if (temp.isWalkable() && !closedList.contains(temp)) {
                     temp.setIsDiagonaly(true);
@@ -339,7 +360,7 @@ public class Map<T extends AbstractNode> {
                 }
             }
 
-            if (x > 0 && y < higth) {
+            if (x > 0 && y < height) {
                 temp = this.getNode((x - 1), (y + 1));
                 if (temp.isWalkable() && !closedList.contains(temp)) {
                     temp.setIsDiagonaly(true);
