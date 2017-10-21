@@ -5,9 +5,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.net.Socket;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import org.json.simple.JSONArray;
@@ -99,13 +97,13 @@ public class Client {
 		Long[] unitIds = units.keySet().toArray(new Long[units.size()]);
 		Long unitId = unitIds[(int) Math.floor(Math.random() * unitIds.length)];
 
-		JSONArray commands = new JSONArray();
-		JSONObject command = new JSONObject();	
-		command.put("command", "MOVE");
-		command.put("dir", direction);
-		command.put("unit", unitId);
-		commands.add(command);
-		return commands;
+		Map<String, Object> args = new HashMap<>();
+		args.put("dir", direction);
+		args.put("unit", unitId);
+		Command move = new Command(Command.MOVE, args);
+		List<Command> commands = new ArrayList<>();
+		commands.add(move);
+		return Command.create(commands);
 	}
 
 	@SuppressWarnings("unchecked")
